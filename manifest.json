@@ -1,0 +1,17 @@
+{
+  "name": "Van Dispatch Brain",
+  "short_name": "DispatchBrain",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#080e1e",
+  "theme_color": "#06b6d4",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/7541/7541893.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

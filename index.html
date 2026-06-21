@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Van Dispatch Brain v9.1 - PWA Edition</title>
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#06b6d4">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #080e1e;
+            --card-bg: #111a33;
+            --card-sub: #172447;
+            --text-main: #f1f5f9;
+            --text-muted: #64748b;
+            --accent: #06b6d4;
+            --accent-hover: #22d3ee;
+            --danger: #f43f5e;
+            --warning: #fbbf24;
+            --success: #10b981;
+            --border: #1e293b;
+        }
+
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .login-screen { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 80vh; width: 100%; max-width: 400px; }
+
+        .tabs-menu, .sub-tabs-menu {
+            display: none;
+            gap: 8px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 900px;
+            background: var(--card-bg);
+            padding: 6px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+        .sub-tabs-menu { background: #0c152b; border-color: rgba(6, 182, 212, 0.2); }
+
+        .tab-btn, .sub-tab-btn {
+            flex: 1;
+            min-width: 90px;
+            padding: 12px 8px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        .tab-btn:hover, .sub-tab-btn:hover { color: var(--text-main); }
+        .tab-btn.active { background: var(--accent); color: #080e1e; font-weight: 700; }
+        .sub-tab-btn.active { background: var(--card-sub); color: var(--accent); border: 1px solid var(--accent); }
+
+        .tab-content, .sub-tab-content { display: none; width: 100%; max-width: 900px; }
+        .tab-content.active, .sub-tab-content.active { display: block; animation: fadeIn 0.25s ease-in-out; }
+
+        .container {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            margin-bottom: 24px;
+            box-sizing: border-box;
+        }
+
+        h2, h3 { margin-top: 0; font-size: 1.25rem; color: #fff; font-weight: 700; border-bottom: 1px solid var(--border); padding-bottom: 12px; margin-bottom: 18px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 16px; }
+
+        .input-group { margin-bottom: 14px; }
+        label { display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 6px; font-weight: 700; text-transform: uppercase; }
+        input, select, textarea { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid var(--border); background: #0c152b; color: #fff; font-size: 1rem; box-sizing: border-box; }
+        input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+        button.main-btn { width: 100%; padding: 14px; background: var(--accent); border: none; border-radius: 10px; color: #080e1e; font-weight: 700; font-size: 1rem; cursor: pointer; transition: all 0.2s; }
+        button.main-btn:hover { background: var(--accent-hover); }
+
+        .user-badge-top { display: none; width: 100%; max-width: 900px; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 0 8px; font-size: 0.9rem; }
+        
+        .table-responsive { overflow-x: auto; margin-top: 14px; border-radius: 10px; border: 1px solid var(--border); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; background: #0c152b; }
+        th, td { padding: 14px 16px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+        th { background: var(--card-bg); color: var(--accent); font-size: 0.75rem; text-transform: uppercase; }
+
+        @media screen and (max-width: 650px) {
+            table, thead, tbody, th, td, tr { display: block; }
+            thead { display: none; }
+            tr { background: #0c152b; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 14px; padding: 12px; }
+            td { border: none; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding: 8px 4px; display: flex; justify-content: space-between; align-items: center; white-space: normal; }
+            td:last-child { border-bottom: none; margin-top: 10px; background: rgba(255,255,255,0.02); padding: 10px 6px; border-radius: 8px; }
+            td:nth-of-type(1):before { content: "📍 Destino:"; font-weight: bold; color: var(--text-muted); }
+            td:nth-of-type(2):before { content: "💰 Bruto:"; font-weight: bold; color: var(--text-muted); }
+            td:nth-of-type(3):before { content: "💵 Tu Neto:"; font-weight: bold; color: var(--text-muted); }
+            td:nth-of-type(4):before { content: "📊 Info Carga:"; font-weight: bold; color: var(--text-muted); }
+            td:nth-of-type(5):before { content: "💳 Estatus:"; font-weight: bold; color: var(--text-muted); }
+        }
+
+        .badge { padding: 5px 10px; border-radius: 6px; font-weight: 700; font-size: 0.75rem; display: inline-block; }
+        .bg-verde { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+        .bg-rojo { background: rgba(244, 63, 94, 0.15); color: #fb7185; }
+        .bg-amarillo { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .bg-azul { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+        .driver-card { background: #0c152b; padding: 16px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
+        .kpi-card { background: #0c152b; border: 1px solid var(--border); padding: 16px; border-radius: 12px; text-align: center; }
+        .kpi-num { font-size: 1.5rem; font-weight: 800; color: var(--accent); margin-top: 4px; }
+        .chart-wrapper { max-height: 260px; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="login-screen">
+        <div class="container" style="width: 100%;">
+            <h2 style="text-align: center; border: none; margin-bottom: 5px;">🧠 Van Dispatch Brain</h2>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">Ecosistema de Datos v9.1</p>
+            <div class="input-group"><label>Usuario o Chofer</label><input type="text" id="loginUser" placeholder="admin o nombre de chofer" value="admin"></div>
+            <div class="input-group"><label>Contraseña Corta</label><input type="password" id="loginPass" value="1234"></div>
+            <button class="main-btn" onclick="handleLogin()">CONECTAR SISTEMA</button>
+            <p style="font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 15px;">Accesos activos de fábrica: <br>🗝️ Admin: <b>admin</b> / 1234 <br>🚚 Chofer Demo: <b>pedro</b> / 1234</p>
+        </div>
+    </div>
+
+    <div id="userBadgeTop" class="user-badge-top">
+        <div>Conectado como: <b id="lblCurrentUserName" style="color: var(--accent);">---</b> <span id="lblCurrentUserRole" class="badge bg-azul" style="margin-left:5px;">---</span></div>
+        <button onclick="handleLogout()" style="background: transparent; border: 1px solid var(--border); color: var(--danger); padding: 5px 12px; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: bold;">Salir Portal 🚪</button>
+    </div>
+
+    <div id="mainTabsMenu" class="tabs-menu">
+        <button class="tab-btn active" id="btnTabDashboard" onclick="switchTab('tab-dashboard')">📊 Dashboard</button>
+        <button class="tab-btn" id="btnTabCalculadora" onclick="switchTab('tab-calculadora')">🗺️ Calculadora</button>
+        <button class="tab-btn" id="btnTabChoferes" onclick="switchTab('tab-choferes')">🚚 Cuentas Choferes</button>
+        <button class="tab-btn" id="btnTabPagos" onclick="switchTab('tab-pagos')">💰 Ledger Maestro</button>
+        <button class="tab-btn" id="btnTabChoferEsp" onclick="switchTab('tab-chofer-esp')">🏁 Mi Panel Chofer</button>
+        <button class="tab-btn" id="btnTabPerfil" onclick="switchTab('tab-perfil')">⚙️ Ajustes</button>
+    </div>
+
+    <div id="tab-dashboard" class="tab-content">
+        <div class="container">
+            <h2>📈 Métricas Globales del Negocio</h2>
+            <div class="grid-3" style="margin-bottom: 20px;">
+                <div class="kpi-card"><div>Bruto Broker</div><div class="kpi-num" id="kpiGross">$0</div></div>
+                <div class="kpi-card"><div>Comisión Retenida</div><div class="kpi-num" id="kpiComm" style="color:var(--success);">$0</div></div>
+                <div class="kpi-card"><div>Cargas Totales</div><div class="kpi-num" id="kpiTotalLoads" style="color:#fff;">0</div></div>
+            </div>
+            <div class="grid-2">
+                <div class="kpi-card chart-wrapper"><canvas id="chartDrivers"></canvas></div>
+                <div class="kpi-card chart-wrapper"><canvas id="chartZones"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-chofer-esp" class="tab-content">
+        <div class="sub-tabs-menu" id="driverSubMenu" style="display: flex;">
+            <button class="sub-tab-btn active" id="btnSubVehiculos" onclick="switchSubTab('sub-vehiculos')">🚙 Mis Autos</button>
+            <button class="sub-tab-btn" id="btnSubCargas" onclick="switchSubTab('sub-cargas')">📦 Mis Viajes / Cargas</button>
+            <button class="sub-tab-btn" id="btnSubGastos" onclick="switchSubTab('sub-gastos')">💸 Gastos e Ingresos</button>
+        </div>
+
+        <div id="sub-vehiculos" class="sub-tab-content active">
+            <div class="container">
+                <h3>🚙 Registrar Vehículo a mi Nombre</h3>
+                <div class="grid-2">
+                    <div class="input-group"><label>Identificador / Apodo Van</label><input type="text" id="vhiName" placeholder="Ej: Ram ProMaster Gris"></div>
+                    <div class="input-group"><label>Número de Placa</label><input type="text" id="vhiPlates" placeholder="FL-993-X"></div>
+                </div>
+                <button class="main-btn" onclick="saveDriverVehicle()">Vincular Vehículo</button>
+            </div>
+            <div class="container">
+                <h3>📋 Mis Unidades Vinculadas</h3>
+                <div id="driverVehiclesList"></div>
+            </div>
+        </div>
+
+        <div id="sub-cargas" class="sub-tab-content">
+            <div class="container">
+                <h3>📦 Reportar y Registrar Nuevo Viaje Terminado</h3>
+                <div class="grid-2">
+                    <div class="input-group"><label>Estado Destino / Ruta</label><input type="text" id="drvLoadState" placeholder="Ej: TX, IL, GA"></div>
+                    <div class="input-group"><label>Pago Bruto de la Carga ($)</label><input type="number" id="drvLoadPay" placeholder="Ej: 600"></div>
+                </div>
+                <div class="grid-3">
+                    <div class="input-group"><label>Millas Recorridas</label><input type="number" id="drvLoadMiles" placeholder="Ej: 420"></div>
+                    <div class="input-group"><label>Peso de Carga (Lbs)</label><input type="number" id="drvLoadWeight" placeholder="Ej: 1500"></div>
+                    <div class="input-group">
+                        <label>Vehículo Utilizado</label>
+                        <select id="drvLoadVehicleSelect"><option value="Por definir">Selecciona auto...</option></select>
+                    </div>
+                </div>
+                <div class="input-group"><label>Notas / Detalles del Broker o Carga</label><input type="text" id="drvLoadNotes" placeholder="Ej: Retraso en rampa de carga, BOL Firmado"></div>
+                <button class="main-btn" style="background: var(--success); color: #080e1e;" onclick="saveDriverLoadFromPanel()">Guardar Operación de Viaje</button>
+            </div>
+
+            <div class="container" style="max-width: 100%;">
+                <h3>📋 Bitácora Histórica de Mis Cargas Guardadas</h3>
+                <div class="table-responsive">
+                    <table>
+                        <thead><tr><th>📍 Destino</th><th>💰 Tarifa Bruta</th><th>💵 Tu Pago Neto</th><th>📊 Info Carga</th><th>💳 Estado Pago</th></tr></thead>
+                        <tbody id="driverLedgerTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="sub-gastos" class="sub-tab-content">
+            <div class="container">
+                <h3>⛽ Declarar Gastos en Ruta (Gasolina, Mecánico, Peajes)</h3>
+                <div class="grid-2">
+                    <div class="input-group"><label>Categoría del Gasto</label>
+                        <select id="expType">
+                            <option value="Gasolina">⛽ Combustible / Diésel</option>
+                            <option value="Peaje">🛣️ Peajes de Autopista</option>
+                            <option value="Mantenimiento">🛠️ Reparación / Ponchadura</option>
+                            <option value="Otros">📦 Comida / Hotel / Seguro</option>
+                        </select>
+                    </div>
+                    <div class="input-group"><label>Monto Invertido ($)</label><input type="number" id="expAmount" placeholder="0.00"></div>
+                </div>
+                <div class="input-group"><label>Detalles descriptivos</label><input type="text" id="expNotes" placeholder="Pagar ticket de diésel Shell"></div>
+                <button class="main-btn" style="background: var(--warning); color:#080e1e;" onclick="saveDriverExpense()">Guardar Gasto Financiero</button>
+            </div>
+
+            <div class="container">
+                <h3>📊 Tu Balance Financiero de Bolsillo</h3>
+                <div class="grid-3" style="margin-bottom: 15px;">
+                    <div class="kpi-card" style="background:#10b98120;"><div>Cobros Recibidos</div><div class="kpi-num" style="color:var(--success);" id="drvKpiIn">$0</div></div>
+                    <div class="kpi-card" style="background:#f43f5e20;"><div>Gastos en Calle</div><div class="kpi-num" style="color:var(--danger);" id="drvKpiOut">$0</div></div>
+                    <div class="kpi-card" style="background:#06b6d420;"><div>Ganancia Limpia</div><div class="kpi-num" style="color:var(--accent);" id="drvKpiNet">$0</div></div>
+                </div>
+                <h3>📋 Historial de Gastos Declarados</h3>
+                <div id="driverExpensesLogsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-calculadora" class="tab-content">
+        <div class="container container-calc">
+            <h2>Calculadora de Ofertas Logísticas</h2>
+            <div class="grid-2">
+                <div class="input-group"><label>Asignar Operación a</label><select id="calcDriverSelect"></select></div>
+                <div class="input-group"><label>Comisión Dispatch (%)</label><input type="number" id="dispCommission" value="10"></div>
+            </div>
+            <div class="grid-2">
+                <div class="input-group"><label>Pago Ofrecido por Broker ($)</label><input type="number" id="brokerOffer" value="500"></div>
+                <div class="input-group">
+                    <label>Zona / Estado Destino</label>
+                    <select id="destinationState">
+                        <option value="verde|IL">Illinois (IL) 🟢 Caliente</option>
+                        <option value="verde|PA">Pennsylvania (PA) 🟢 Caliente</option>
+                        <option value="amarillo|GA">Georgia (GA) 🟡 Regular</option>
+                        <option value="rojo|FL">Florida (FL) 🔴 ZONA MUERTA</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid-3">
+                <div class="input-group"><label>Millas del Viaje</label><input type="number" id="loadedMiles" value="380"></div>
+                <div class="input-group"><label>Peso Neto (Lbs)</label><input type="number" id="weight" value="1200"></div>
+            </div>
+            <button class="main-btn" onclick="calculateLoad()">ANALIZAR LOGÍSTICA</button>
+
+            <div id="resultsBlock" style="display:none; margin-top:20px; border-top:1px solid var(--border); padding-top:15px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:8px;"><span>Tu Comisión Retenida:</span><b id="resComm" style="color:var(--accent);">$0.00</b></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:15px;"><span style="color:#34d399;">Pago Neto Chofer:</span><b id="resDriverPay" style="color:#34d399;">$0.00</b></div>
+                <button class="main-btn" style="background:#f1f5f9; color:#080e1e;" onclick="saveToHistory()">💾 INTRODUCIR EN LEDGER MAESTRO</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-choferes" class="tab-content">
+        <div class="container">
+            <h2>➕ Registrar Nueva Cuenta de Chofer</h2>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:15px;">El nombre que guardes aquí servirá de forma automática como su nombre de usuario para iniciar sesión en la plataforma.</p>
+            <div class="grid-2">
+                <div class="input-group"><label>Nombre de Usuario / Comercial</label><input type="text" id="driverName" placeholder="Ej: pedro"></div>
+                <div class="input-group"><label>Teléfono de Contacto</label><input type="text" id="driverPhone" placeholder="1234567890"></div>
+            </div>
+            <button class="main-btn" onclick="addDriver()">ACTIVAR CUENTA DE CHOFER</button>
+        </div>
+        <div class="container"><h2>📋 Cuentas de Choferes Operativas</h2><div id="driversList"></div></div>
+    </div>
+
+    <div id="tab-pagos" class="tab-content">
+        <div class="container" style="max-width: 100%;">
+            <h2>💰 Historial General de Operaciones Contables</h2>
+            <div class="table-responsive">
+                <table>
+                    <thead><tr><th>Chofer</th><th>Destino</th><th>Bruto</th><th>Comisión</th><th>Neto Chofer</th><th>Carga</th><th>Pago</th><th>Acción</th></tr></thead>
+                    <tbody id="ledgerTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-perfil" class="tab-content">
+        <div class="container">
+            <h2>⚙️ Seguridad y Mantenimiento del Sistema</h2>
+            <div id="adminSafetyZone" style="display: none; border: 1px solid var(--danger); background: rgba(244, 63, 94, 0.02); padding: 18px; border-radius: 12px;">
+                <h3 style="color: var(--danger); border: none;">⚠️ Hard Reset General</h3>
+                <p style="font-size: 0.85rem; color: var(--text-muted);">Elimina de forma irreversible todas las tablas relacionales locales del almacenamiento de este dispositivo.</p>
+                <button class="main-btn" style="background: var(--danger); color: #fff;" onclick="systemHardReset()">🔥 VACIAR TODA LA BASE DE DATOS LOCAL</button>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let drivers = JSON.parse(localStorage.getItem('vd_drivers'));
+    if (!drivers || drivers.length === 0) {
+        drivers = [{ id: 1001, name: "pedro", phone: "9998887766" }];
+        localStorage.setItem('vd_drivers', JSON.stringify(drivers));
+    }
+    
+    let historyRecords = JSON.parse(localStorage.getItem('vd_history')) || [];
+    let driverVehicles = JSON.parse(localStorage.getItem('vd_vehicles')) || [];
+    let driverExpenses = JSON.parse(localStorage.getItem('vd_expenses')) || [];
+    
+    let currentUser = null; let globalData = {}; let chartDriversObj = null; let chartZonesObj = null;
+
+    function handleLogin() {
+        const userInput = document.getElementById('loginUser').value.trim();
+        const passInput = document.getElementById('loginPass').value;
+
+        if (userInput.toLowerCase() === 'admin' && passInput === '1234') {
+            currentUser = { username: 'Admin', role: 'admin' };
+        } else {
+            const matchedDriver = drivers.find(d => d.name.toLowerCase() === userInput.toLowerCase());
+            if (matchedDriver && passInput === '1234') {
+                currentUser = { username: matchedDriver.name, role: 'driver' };
+            } else {
+                return alert("Acceso denegado. Este usuario no existe o la clave es incorrecta.");
+            }
+        }
+
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('userBadgeTop').style.display = 'flex';
+        document.getElementById('mainTabsMenu').style.display = 'flex';
+        document.getElementById('lblCurrentUserName').innerText = currentUser.username;
+        document.getElementById('lblCurrentUserRole').innerText = currentUser.role.toUpperCase();
+
+        applyPermissions();
+    }
+
+    function applyPermissions() {
+        document.getElementById('btnTabDashboard').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('btnTabCalculadora').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('btnTabChoferes').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('btnTabPagos').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('btnTabPerfil').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+        document.getElementById('btnTabChoferEsp').style.display = currentUser.role === 'driver' ? 'block' : 'none';
+        document.getElementById('adminSafetyZone').style.display = currentUser.role === 'admin' ? 'block' : 'none';
+
+        if (currentUser.role === 'admin') { switchTab('tab-dashboard'); } 
+        else { switchTab('tab-chofer-esp'); switchSubTab('sub-vehiculos'); }
+        updateDriverDropdowns();
+    }
+
+    function handleLogout() {
+        currentUser = null;
+        document.getElementById('loginScreen').style.display = 'flex';
+        document.getElementById('userBadgeTop').style.display = 'none';
+        document.getElementById('mainTabsMenu').style.display = 'none';
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    }
+
+    function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).classList.add('active');
+        
+        const btnMap = { 'tab-dashboard': 'btnTabDashboard', 'tab-calculadora': 'btnTabCalculadora', 'tab-choferes': 'btnTabChoferes', 'tab-pagos': 'btnTabPagos', 'tab-chofer-esp': 'btnTabChoferEsp', 'tab-perfil': 'btnTabPerfil' };
+        document.getElementById(btnMap[tabId]).classList.add('active');
+
+        if(tabId === 'tab-dashboard') initAnalyticsCharts();
+        if(tabId === 'tab-pagos') renderLedgerTable();
+        if(tabId === 'tab-choferes') renderDriversList();
+    }
+
+    function switchSubTab(subTabId) {
+        document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+        document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+        document.getElementById(subTabId).classList.add('active');
+        
+        document.getElementById('btnSubVehiculos').classList.toggle('active', subTabId === 'sub-vehiculos');
+        document.getElementById('btnSubCargas').classList.toggle('active', subTabId === 'sub-cargas');
+        document.getElementById('btnSubGastos').classList.toggle('active', subTabId === 'sub-gastos');
+
+        if(subTabId === 'sub-vehiculos') renderDriverVehicles();
+        if(subTabId === 'sub-cargas') { updateDriverVehicleDropdownSelection(); renderDriverSpecificLedger(); }
+        if(subTabId === 'sub-gastos') renderDriverExpensesAndBalance();
+    }
+
+    // --- SUB-TAB CHOFER: VEHÍCULOS ---
+    function saveDriverVehicle() {
+        const name = document.getElementById('vhiName').value.trim();
+        const plates = document.getElementById('vhiPlates').value.trim();
+        if(!name) return alert("Asigna un nombre descriptivo a tu unidad.");
+
+        driverVehicles.push({ id: Date.now(), driver: currentUser.username, name, plates });
+        localStorage.setItem('vd_vehicles', JSON.stringify(driverVehicles));
+        document.getElementById('vhiName').value = ""; document.getElementById('vhiPlates').value = "";
+        renderDriverVehicles();
+    }
+
+    function renderDriverVehicles() {
+        const container = document.getElementById('driverVehiclesList');
+        const filtered = driverVehicles.filter(v => v.driver.toLowerCase() === currentUser.username.toLowerCase());
+        if(!filtered.length) { container.innerHTML = "<p style='color:var(--text-muted); font-size:0.85rem;'>No tienes vehículos guardados en tu flota.</p>"; return; }
+        container.innerHTML = "";
+        filtered.forEach(v => {
+            container.innerHTML += `<div class="driver-card"><div><strong>🚚 ${v.name}</strong><br><small style="color:var(--text-muted);">Placa: ${v.plates || 'N/A'}</small></div><button style="background:var(--danger); border:none; color:#fff; padding:6px 10px; border-radius:6px; cursor:pointer;" onclick="deleteVehicle(${v.id})">🗑️</button></div>`;
+        });
+    }
+
+    function deleteVehicle(id) {
+        driverVehicles = driverVehicles.filter(v => v.id !== id);
+        localStorage.setItem('vd_vehicles', JSON.stringify(driverVehicles));
+        renderDriverVehicles();
+    }
+
+    function updateDriverVehicleDropdownSelection() {
+        const select = document.getElementById('drvLoadVehicleSelect'); if(!select) return;
+        select.innerHTML = '<option value="Por definir">Selecciona auto...</option>';
+        const myUnits = driverVehicles.filter(v => v.driver.toLowerCase() === currentUser.username.toLowerCase());
+        myUnits.forEach(v => select.innerHTML += `<option value="${v.name}">${v.name}</option>`);
+    }
+
+    // --- CHOFER INGRESA SU VIAJE DIRECTAMENTE ---
+    function saveDriverLoadFromPanel() {
+        const stateId = document.getElementById('drvLoadState').value.trim().toUpperCase();
+        const finalPay = parseFloat(document.getElementById('drvLoadPay').value) || 0;
+        const totalMiles = parseFloat(document.getElementById('drvLoadMiles').value) || 0;
+        const weight = parseFloat(document.getElementById('drvLoadWeight').value) || 0;
+        const vehicle = document.getElementById('drvLoadVehicleSelect').value;
+        const notes = document.getElementById('drvLoadNotes').value.trim();
+
+        if(!stateId || finalPay <= 0) return alert("Por favor, introduce el estado destino y la paga bruta de la carga.");
+
+        const commissionPct = 10;
+        const myCommission = finalPay * (commissionPct / 100);
+        const driverPay = finalPay - myCommission;
+
+        const record = {
+            id: Date.now(),
+            driver: currentUser.username,
+            stateId,
+            colorZone: 'verde',
+            totalMiles,
+            offer: finalPay,
+            commissionPct,
+            myCommission,
+            driverPay,
+            finalPay,
+            status: 'Aceptada',
+            paymentStatus: 'Pendiente de Facturar',
+            metadata: `Vehículo: ${vehicle} | Notas: ${notes}`
+        };
+
+        historyRecords.unshift(record);
+        localStorage.setItem('vd_history', JSON.stringify(historyRecords));
+
+        document.getElementById('drvLoadState').value = "";
+        document.getElementById('drvLoadPay').value = "";
+        document.getElementById('drvLoadMiles').value = "";
+        document.getElementById('drvLoadWeight').value = "";
+        document.getElementById('drvLoadNotes').value = "";
+
+        alert("¡Viaje guardado con éxito en tu bitácora y en el Ledger Maestro!");
+        renderDriverSpecificLedger();
+    }
+
+    // --- SUB-TAB CHOFER: VER SUS VIAJES ---
+    function renderDriverSpecificLedger() {
+        const tbody = document.getElementById('driverLedgerTableBody'); tbody.innerHTML = "";
+        const filtered = historyRecords.filter(r => r.driver.toLowerCase() === currentUser.username.toLowerCase());
+        if(!filtered.length) { tbody.innerHTML = "<tr><td colspan='5' style='text-align:center; color:var(--text-muted);'>No posees viajes reportados.</td></tr>"; return; }
+        
+        filtered.forEach(r => {
+            const extraInfo = r.metadata || `Millas: ${r.totalMiles}`;
+            tbody.innerHTML += `<tr><td><b>${r.stateId}</b></td><td>$${r.finalPay}</td><td style="color:#34d399; font-weight:bold;">$${r.driverPay.toFixed(2)}</td><td><small style="color:var(--text-muted);">${extraInfo}</small></td><td><span class="badge bg-amarillo">${r.paymentStatus}</span></td></tr>`;
+        });
+    }
+
+    // --- SUB-TAB CHOFER: CONTROL DE GASTOS ---
+    function saveDriverExpense() {
+        const type = document.getElementById('expType').value;
+        const amount = parseFloat(document.getElementById('expAmount').value) || 0;
+        const notes = document.getElementById('expNotes').value.trim();
+        if(amount <= 0) return alert("Ingresa un monto válido.");
+
+        driverExpenses.push({ id: Date.now(), driver: currentUser.username, type, amount, notes, date: new Date().toLocaleDateString() });
+        localStorage.setItem('vd_expenses', JSON.stringify(driverExpenses));
+        document.getElementById('expAmount').value = ""; document.getElementById('expNotes').value = "";
+        renderDriverExpensesAndBalance();
+    }
+
+    function renderDriverExpensesAndBalance() {
+        const container = document.getElementById('driverExpensesLogsList');
+        const myExpenses = driverExpenses.filter(e => e.driver.toLowerCase() === currentUser.username.toLowerCase());
+        const myCargas = historyRecords.filter(r => r.driver.toLowerCase() === currentUser.username.toLowerCase() && r.status === 'Aceptada');
+
+        let totalIngresosNetos = myCargas.reduce((acc, r) => acc + r.driverPay, 0);
+        let totalGastos = myExpenses.reduce((acc, e) => acc + e.amount, 0);
+        let balanceReal = totalIngresosNetos - totalGastos;
+
+        document.getElementById('drvKpiIn').innerText = `$${totalIngresosNetos.toFixed(2)}`;
+        document.getElementById('drvKpiOut').innerText = `$${totalGastos.toFixed(2)}`;
+        document.getElementById('drvKpiNet').innerText = `$${balanceReal.toFixed(2)}`;
+
+        if(!myExpenses.length) { container.innerHTML = "<p style='color:var(--text-muted); font-size:0.85rem;'>No has declarado gastos operativos.</p>"; return; }
+        container.innerHTML = "";
+        myExpenses.forEach(e => {
+            container.innerHTML += `<div class="driver-card" style="border-left:4px solid var(--danger);"><div><strong>${e.type} - $${e.amount.toFixed(2)}</strong><br><small style="color:var(--text-muted);">${e.date} | ${e.notes || 'Sin notas'}</small></div><button style="background:transparent; border:none; color:var(--danger); cursor:pointer; font-weight:bold;" onclick="deleteExpense(${e.id})">❌</button></div>`;
+        });
+    }
+
+    function deleteExpense(id) {
+        driverExpenses = driverExpenses.filter(e => e.id !== id);
+        localStorage.setItem('vd_expenses', JSON.stringify(driverExpenses));
+        renderDriverExpensesAndBalance();
+    }
+
+    // --- CORE LOGÍSTICO Y ACCESOS DEL ADMINISTRADOR ---
+    function initAnalyticsCharts() {
+        let gross = 0; let comm = 0; let loads = historyRecords.length; let driverData = {}; let zoneData = { verde: 0, amarillo: 0, rojo: 0 };
+        historyRecords.forEach(r => {
+            if(r.status === 'Aceptada') {
+                gross += parseFloat(r.finalPay || 0); comm += parseFloat(r.myCommission || 0);
+                if (r.driver !== 'Ninguno') driverData[r.driver] = (driverData[r.driver] || 0) + parseFloat(r.driverPay || 0);
+                if (r.colorZone) zoneData[r.colorZone] = (zoneData[r.colorZone] || 0) + 1;
+            }
+        });
+        document.getElementById('kpiGross').innerText = `$${gross.toLocaleString()}`;
+        document.getElementById('kpiComm').innerText = `$${comm.toLocaleString()}`;
+        document.getElementById('kpiTotalLoads').innerText = loads;
+
+        const ctxDrivers = document.getElementById('chartDrivers').getContext('2d');
+        if (chartDriversObj) chartDriversObj.destroy();
+        chartDriversObj = new Chart(ctxDrivers, { type: 'bar', data: { labels: Object.keys(driverData), datasets: [{ label: 'Ingresos Chofer', data: Object.values(driverData), backgroundColor: '#06b6d4' }] }, options: { responsive:true, maintainAspectRatio:false } });
+
+        const ctxZones = document.getElementById('chartZones').getContext('2d');
+        if (chartZonesObj) chartZonesObj.destroy();
+        chartZonesObj = new Chart(ctxZones, { type: 'doughnut', data: { labels: ['🟢 Caliente', '🟡 Regular', '🔴 Muerta'], datasets: [{ data: [zoneData.verde, zoneData.amarillo, zoneData.rojo], backgroundColor: ['#10b981', '#fbbf24', '#f43f5e'] }] }, options: { responsive:true, maintainAspectRatio:false } });
+    }
+
+    function calculateLoad() {
+        const offer = parseFloat(document.getElementById('brokerOffer').value) || 0;
+        const commissionPct = parseFloat(document.getElementById('dispCommission').value) || 0;
+        const totalMiles = parseFloat(document.getElementById('loadedMiles').value) || 0;
+        const stateData = document.getElementById('destinationState').value.split('|');
+        const myCommission = offer * (commissionPct / 100); const driverPay = offer - myCommission;
+
+        globalData = { id: Date.now(), driver: document.getElementById('calcDriverSelect').value, stateId: stateData[1], colorZone: stateData[0], totalMiles, offer, commissionPct, myCommission, driverPay, finalPay: offer, paymentStatus: 'Pendiente de Facturar' };
+        document.getElementById('resultsBlock').style.display = 'block';
+        document.getElementById('resComm').innerText = "$" + myCommission.toFixed(2); document.getElementById('resDriverPay').innerText = "$" + driverPay.toFixed(2);
+    }
+
+    function saveToHistory() {
+        globalData.status = 'Aceptada'; historyRecords.unshift(globalData);
+        localStorage.setItem('vd_history', JSON.stringify(historyRecords)); alert("Operación agregada al Ledger.");
+    }
+
+    function renderLedgerTable() {
+        const tbody = document.getElementById('ledgerTableBody'); tbody.innerHTML = "";
+        if(!historyRecords.length) { tbody.innerHTML = "<tr><td colspan='8' style='text-align:center; color:var(--text-muted);'>No existen operaciones.</td></tr>"; return; }
+        historyRecords.forEach(r => {
+            tbody.innerHTML += `<tr><td><b>${r.driver}</b></td><td>${r.stateId}</td><td>$${r.finalPay}</td><td>$${r.myCommission.toFixed(2)}</td><td>$${r.driverPay.toFixed(2)}</td><td>${r.status}</td><td>${r.paymentStatus}</td><td><select onchange="updatePaymentStatus(${r.id}, this.value)"><option>Estatus</option><option value="Pagado al Chofer">🏁 Pagado</option></select></td></tr>`;
+        });
+    }
+
+    function updatePaymentStatus(recordId, newStatus) {
+        historyRecords = historyRecords.map(r => { if(r.id === recordId) r.paymentStatus = newStatus; return r; });
+        localStorage.setItem('vd_history', JSON.stringify(historyRecords)); renderLedgerTable();
+    }
+
+    function addDriver() {
+        const name = document.getElementById('driverName').value.trim();
+        const phone = document.getElementById('driverPhone').value.trim();
+        if(!name) return alert("El nombre es obligatorio.");
+
+        if(drivers.some(d => d.name.toLowerCase() === name.toLowerCase())) return alert("Este chofer ya se encuentra registrado.");
+
+        drivers.push({ id: Date.now(), name, phone }); 
+        localStorage.setItem('vd_drivers', JSON.stringify(drivers));
+        document.getElementById('driverName').value = ""; document.getElementById('driverPhone').value = "";
+        updateDriverDropdowns(); renderDriversList(); alert(`Cuenta para "${name}" creada.`);
+    }
+
+    // --- REGISTRO DE SERVICE WORKER PARA LA PWA ---
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker PWA registrado con éxito.', reg))
+                .catch(err => console.error('Error al activar Service Worker:', err));
+        });
+    }
+
+    function updateDriverDropdowns() {
+        const select = document.getElementById('calcDriverSelect'); if(!select) return;
+        select.innerHTML = '';
+        drivers.forEach(d => select.innerHTML += `<option value="${d.name}">${d.name}</option>`);
+    }
+
+    function renderDriversList() {
+        const container = document.getElementById('driversList'); container.innerHTML = "";
+        drivers.forEach(d => container.innerHTML += `<div class="driver-card"><div><b>👤 ${d.name}</b> <small style="color:var(--text-muted); margin-left:10px;">Tel: ${d.phone}</small></div><button style="background:var(--danger); border:none; color:#fff; padding:5px 8px; border-radius:4px; cursor:pointer;" onclick="deleteDriver(${d.id})">🗑></button></div>`);
+    }
+
+    function deleteDriver(id) { 
+        if(confirm("¿Eliminar chofer?")) { 
+            drivers = drivers.filter(d => d.id !== id); 
+            localStorage.setItem('vd_drivers', JSON.stringify(drivers)); 
+            renderDriversList(); updateDriverDropdowns(); 
+        } 
+    }
+
+    function systemHardReset() {
+        if(confirm("¿Deseas purgar por completo la base de datos local?")) {
+            if(prompt("Escribe BORRAR para confirmar:") === "BORRAR") {
+                localStorage.clear(); historyRecords = []; driverVehicles = []; driverExpenses = [];
+                drivers = [{ id: 1001, name: "pedro", phone: "9998887766" }];
+                localStorage.setItem('vd_drivers', JSON.stringify(drivers));
+                alert("Base de datos reseteada."); handleLogout();
+            }
+        }
+    }
+</script>
+</body>
+</htm
